@@ -4,7 +4,6 @@
 #include "main.h"
 #include "dma.h"
 #include "i2c.h"
-#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -63,17 +62,23 @@ ItemTypedef *AddMenuItem(Menutypedef *menu,
                          Menutypedef *subMenu, 
                          ControlModeTypedef ctrlMode, 
                          int *ctrlData);
+
+void FunctionForCtrl(void);
+void FunctionForNextMenu(void);
+
 void UI_Init(void);
 void UI_UpDate(void);
+void UI_Move(void);
+void UI_Show(void);
+
+
 void KeyShortPress(void);
 void KeyLongPress(void);
 void Frame_Update(void);
 void Screen_Update(void);
 void ScrollBar_Update(void);
 void switchCtrlBar_Update(void);
-void UI_Move(void);
 uint8_t UI_SmoothTransition(UIElemTypedef *elem, float *moveProcess, float moveSpeed);
-void UI_Show(void);
 void InterfaceSwitch(void);
 void DrawMenuItems(void);
 void DrawControlSelection(void);
@@ -86,8 +91,7 @@ void DrawDisplayControl(ControlTypedef *control);
 void DrawSliderControl(ControlTypedef *control);
 float easeInOut(float t);
 
-void FunctionForCtrl(void);
-void FunctionForNextMenu(void);
+
 
 #endif
 

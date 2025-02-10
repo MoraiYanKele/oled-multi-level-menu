@@ -38,6 +38,7 @@
 ItemTypedef mainMenuItems[] = 
 {
   {"example", 7, NULL, NULL, NULL}, /**< 示例菜单项 */
+
 };
 
 /**
@@ -264,7 +265,13 @@ Menutypedef *AddMenu(const char *name, ItemTypedef *items, uint16_t itemCount, M
     return NULL;
 
   // 分配菜单名称
-  newMenu->menuName = name;
+  newMenu->menuName = (char *)malloc(strlen(name) + 1);
+  if (!newMenu->menuName)
+  {
+    free(newMenu);
+    return NULL;
+  }
+  strcpy(newMenu->menuName, name);
 
   // 初始化菜单项
   if (items && itemCount > 0)
@@ -397,8 +404,10 @@ ItemTypedef *AddMenuItem(Menutypedef *menu,
  */
 void UI_Init()
 {
+  OLED_Init();
   memset(KeyList, 0, sizeof(KeyList));
   frameWidth.targetVal = currentMenu->items[currentMenu->currentItemIndex].len * 6 + 4;
+  HAL_Delay(20);
 }
 
 
