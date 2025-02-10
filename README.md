@@ -2,7 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-OLED多级菜单系统，支持动态动画效果和多种交互控件，适用于嵌入式设备的用户界面开发。
+OLED多级菜单系统，支持动态动画效果和多种交互控件，适用于嵌入式设备的用户界面开发
+
+（暂时只支持英文，后续有时间会增加中文支持）
 
 ![示例效果](docs/demo.gif)  
 （注：此处可替换为实际效果图）
