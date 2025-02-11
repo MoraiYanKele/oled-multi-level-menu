@@ -6,8 +6,8 @@ OLED多级菜单系统，支持动态动画效果和多种交互控件，适用�
 
 （暂时只支持英文，后续有时间会增加中文支持）
 
-![示例效果](docs/demo.gif)  
-（注：此处可替换为实际效果图）
+视频介绍：
+https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video_card.click&vd_source=db23359a52cb1ccca808fd2611658f09
 
 ---
 
