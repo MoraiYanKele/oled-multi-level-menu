@@ -52,7 +52,7 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
 #define LEFT_KEY_GPIO_PIN  GPIO_PIN_9
 ```
 并且需要开启两个按键gpio的中断
-
+且需要上升沿和下降沿都触发中断！
 
 ### 3. OLED_Send()函数配置
 在`oled_draw.c`中的OLED_Send是移植本项目时的重要函数
