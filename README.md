@@ -10,6 +10,13 @@ OLED多级菜单系统，支持动态动画效果和多种交互控件，适用�
 
 https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video_card.click&vd_source=db23359a52cb1ccca808fd2611658f09
 
+问题整理:
+  - 两个按键gpio的中断需要上升沿和下降沿都触发中断！
+  - 如果创建的内容较多需要再cubemx的Project Manager中的Linker Settings将堆栈内存设置大一些
+    - 如果在freertos中使用直接将堆栈分配大一些
+  - 在freertos中使用时需要在`oled_draw.c`中`InterfaceSwitch()`将延时函数改为非阻塞的
+
+
 ---
 
 ## 功能特性
