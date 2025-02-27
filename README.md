@@ -51,7 +51,7 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
 `oled_menu.c` `oled_deaw.c` `font.c`移植到Src文件夹
 
 ### 2. CubeMX配置
-[GPIO配置](images/屏幕截图 2025-02-28 012933.png)
+[GPIO配置](images/2025-02-28012933.png)
 
 ### 2. 按键配置
 在`oled_menu.h`中修改GPIO定义：
