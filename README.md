@@ -51,9 +51,9 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
 `oled_menu.c` `oled_deaw.c` `font.c`移植到Src文件夹
 
 ### 2. CubeMX配置
-[GPIO配置](images/2025-02-28012933.png)
+![GPIO配置](images/2025-02-28012933.png)
 
-### 2. 按键配置
+### 3. 按键配置
 在`oled_menu.h`中修改GPIO定义：
 ```c
 #define RIGHT_KEY_GPIOX    GPIOC
@@ -64,7 +64,7 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
 并且需要开启两个按键gpio的中断
 且需要上升沿和下降沿都触发中断！
 
-### 3. OLED_Send()函数配置
+### 4. OLED_Send()函数配置
 在`oled_draw.c`中的OLED_Send是移植本项目时的重要函数
 
 ```c
@@ -77,7 +77,7 @@ void OLED_Send(uint8_t *data, uint8_t len)
 默认使用stm32 i2c+DMA（建议在cubemx中配置i2c为高速模式）, 如有其他i2c或spi需要请自行更改
 
 
-### 4. api调用
+### 5. api调用
 
 `AddMenu()`添加新菜单   `AddMenuItem()`添加菜单项
 
