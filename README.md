@@ -15,7 +15,7 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
   - 如果创建的内容较多需要再cubemx的Project Manager中的Linker Settings将堆栈内存设置大一些
     - 如果在freertos中使用直接将堆栈分配大一些
   - 在freertos中使用时需要在`oled_draw.c`中`InterfaceSwitch()`将延时函数改为非阻塞的
-
+  - 如果需要翻转屏幕，在`OLED_Init()`中有详细配置，可以根据注释结合自己的需求更改
 
 ---
 
