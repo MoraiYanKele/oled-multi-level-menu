@@ -52,6 +52,10 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
 
 ### 2. CubeMX配置
 ![GPIO配置](images/2025-02-28012933.png)
+<div style="display: flex; align-items: center;">
+    <img src="images/2025-02-28012933.png" alt="GPIO配置" width="100">
+    <span style="margin-left: 10px;">GPIO配置</span>
+</div>
 
 ### 3. 按键配置
 在`oled_menu.h`中修改GPIO定义：
