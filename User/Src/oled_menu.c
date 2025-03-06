@@ -303,7 +303,7 @@ Menutypedef *AddMenu(const char *name, ItemTypedef *items, uint16_t itemCount, M
  * @param name     菜单项的名称（字符串）。
  * @param funtion  菜单项对应的回调函数（可为 NULL）。
  * @param subMenu  该菜单项的子菜单（可为 NULL）。
- * @param ctrlMode 控件模式（如 SWITCH_CTRL、DISPLAY_CTRL 等，可为 NULL）。
+ * @param ctrlMode 控件模式（如 SWITCH_CTRL、DISPLAY_CTRL 等，无控件时为NONE_CTRL）。
  * @param ctrlData 控件数据指针（用于存储控件的值，可为 NULL）。
  * @return ItemTypedef* 返回新创建的菜单项指针，若失败则返回 NULL。
  * 
@@ -355,7 +355,7 @@ ItemTypedef *AddMenuItem(Menutypedef *menu,
     newItem->control->data = ctrlData;
   }
   else 
-    newItem->control = NULL;
+    newItem->control = NONE_CTRL;
   
   if (!menu->items)
   {
