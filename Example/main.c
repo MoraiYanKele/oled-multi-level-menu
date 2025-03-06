@@ -118,7 +118,7 @@ int main(void)
 
   int data = 10;
 
-  AddMenuItem(&mainMenu, "example2", NULL, NULL, NULL, NULL);
+  AddMenuItem(&mainMenu, "example2", NULL, NULL, NONE_CTRL, NULL);
   AddMenuItem(&mainMenu, "switch", FunctionForCtrl, NULL, SWITCH_CTRL, &switchData);
   AddMenuItem(&mainMenu, "switch", FunctionForCtrl, NULL, SWITCH_CTRL, &switchData2);
 
@@ -127,9 +127,9 @@ int main(void)
   
 
   Menutypedef *subMenu = AddMenu("subMenu", NULL, 0, &mainMenu);
-  AddMenuItem(subMenu, "exampleForSub", NULL, NULL, NULL, NULL);
+  AddMenuItem(subMenu, "exampleForSub", NULL, NULL, NONE_CTRL, NULL);
 
-  AddMenuItem(&mainMenu, "nextMenu", FunctionForNextMenu, subMenu, NULL, NULL);
+  AddMenuItem(&mainMenu, "nextMenu", FunctionForNextMenu, subMenu, NONE_CTRL, NULL);
 
   UI_Init();
   while (1)
