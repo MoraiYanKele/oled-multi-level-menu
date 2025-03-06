@@ -12,9 +12,11 @@ struct ControlTypedef;
  * @brief 控件模式类型枚举。
  * 
  * 此枚举定义了菜单项中控件的类型，例如开关控件、显示控件和滑动条控件。
+ * NONE_CTRL表示无控件。
  */
 typedef enum 
 {
+  NONE_CTRL    =  0,        /**< 无控件 */
   SWITCH_CTRL  =  1,        /**< 开关控件 */
   DISPLAY_CTRL =  2,        /**< 显示控件 */
   SLIDER_CTRL  =  3         /**< 滑动条控件 */
