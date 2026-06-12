@@ -33,26 +33,26 @@
 #define LEFT_KEY_GPIO_PIN     GPIO_PIN_9
 
 extern Menutypedef mainMenu;
-extern Menutypedef *currentMenu;
-extern KeyTypeDef KeyList[2];
+extern MenuContextTypedef defaultMenuContext;
+extern MenuContextTypedef *activeMenuContext;
 
-extern UIElemTypedef frameY;
-extern UIElemTypedef frameWidth;
-extern UIElemTypedef screenTop;
-extern UIElemTypedef scrollBarY;
-extern UIElemTypedef switchCtrlBar;
-extern UIElemTypedef displayCtrlBar;
-
-extern ScreenIndexTypedef screenIndex;
-extern uint8_t keyID;
-extern uint8_t menuSwitchFlag;
-extern uint8_t controlSelectionFlag;
-
-extern float moveProcess_FrameY;
-extern float moveProcess_FrameWidth;
-extern float moveProcess_Screen;
-extern float moveProcess_ScrollBar;
-extern float moveProcess_SwitchCtrlBar;
+#define currentMenu              (activeMenuContext->state.current_menu)
+#define KeyList                  (activeMenuContext->keys)
+#define frameY                   (activeMenuContext->anim.frame_y)
+#define frameWidth               (activeMenuContext->anim.frame_width)
+#define screenTop                (activeMenuContext->anim.screen_top)
+#define scrollBarY               (activeMenuContext->anim.scroll_bar_y)
+#define switchCtrlBar            (activeMenuContext->anim.switch_ctrl_bar)
+#define displayCtrlBar           (activeMenuContext->anim.display_ctrl_bar)
+#define screenIndex              (activeMenuContext->state.screen_index)
+#define keyID                    (activeMenuContext->key_id)
+#define menuSwitchFlag           (activeMenuContext->state.menu_switch_flag)
+#define controlSelectionFlag     (activeMenuContext->state.control_selection_flag)
+#define moveProcess_FrameY       (activeMenuContext->anim.move_process_frame_y)
+#define moveProcess_FrameWidth   (activeMenuContext->anim.move_process_frame_width)
+#define moveProcess_Screen       (activeMenuContext->anim.move_process_screen)
+#define moveProcess_ScrollBar    (activeMenuContext->anim.move_process_scroll_bar)
+#define moveProcess_SwitchCtrlBar (activeMenuContext->anim.move_process_switch_ctrl_bar)
 
 Menutypedef *AddMenu(const char *name, ItemTypedef *items, uint16_t itemCount, Menutypedef *parentMenu);
 
@@ -71,6 +71,11 @@ void UI_UpDate(void);
 void UI_Move(void);
 void UI_Show(void);
 
+void Menu_InitContext(MenuContextTypedef *ctx, Menutypedef *rootMenu);
+void Menu_SetContext(MenuContextTypedef *ctx);
+void Menu_SetPlatform(MenuContextTypedef *ctx, MenuPlatformTypedef platform);
+void Menu_HandleEvent(MenuEventTypedef event);
+void Menu_HandleEventFor(MenuContextTypedef *ctx, MenuEventTypedef event);
 
 void KeyShortPress(void);
 void KeyLongPress(void);

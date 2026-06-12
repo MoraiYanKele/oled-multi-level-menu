@@ -4,7 +4,7 @@
 
 OLED多级菜单系统，支持动态动画效果和多种交互控件，适用于嵌入式设备的用户界面开发
 
-（暂时只支持英文，后续有时间会增加中文支持）
+菜单默认使用 ASCII 字体绘制；底层绘制接口已包含 UTF-8 字库支持，可按需接入中文菜单项。
 
 视频介绍：
 
@@ -12,9 +12,8 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
 
 问题整理:
   - 两个按键gpio的中断需要上升沿和下降沿都触发中断！
-  - 如果创建的内容较多需要再cubemx的Project Manager中的Linker Settings将堆栈内存设置大一些
-    - 如果在freertos中使用直接将堆栈分配大一些
-  - 在freertos中使用时需要在`oled_draw.c`中`InterfaceSwitch()`将延时函数改为非阻塞的
+  - 菜单和菜单项使用静态池，默认 `MENU_MAX_MENUS` 为 8，`MENU_MAX_ITEMS` 为 16，可在 `oled_menu_types.h` 中调整
+  - 在 FreeRTOS 中使用时，可通过 `Menu_SetPlatform()` 将延时函数替换为 `osDelay`
   - 如果需要翻转屏幕，在`OLED_Init()`中有详细配置，可以根据注释结合自己的需求更改
 
 ---
@@ -29,7 +28,8 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
   - 滑动条控件
 - **智能滚动条**：根据菜单项数量自适应调整
 - **按键响应优化**：支持长短按区分处理
-- **低内存占用**：显存动态管理，适配资源受限设备
+- **静态内存池**：菜单和菜单项不依赖运行期堆扩容，适配资源受限设备
+- **事件接口**：支持将按键、编码器等输入转换为 `MenuEventTypedef`
 
 ---
 
@@ -46,9 +46,9 @@ https://www.bilibili.com/video/BV1y7NYeMELy/?spm_id_from=333.1387.homepage.video
 ### 1. 移植驱动
 将以下文件添加到工程：
 
-`oled_menu.h` `oled_deaw.h` `oled_menu_types.h` `font.h`移植到Inc文件夹
+`oled_menu.h` `oled_draw.h` `oled_menu_types.h` `font.h`移植到Inc文件夹
 
-`oled_menu.c` `oled_deaw.c` `font.c`移植到Src文件夹
+`oled_menu.c` `oled_draw.c` `font.c`移植到Src文件夹
 
 ### 2. CubeMX配置
 
@@ -82,7 +82,7 @@ i2c配置
 ```c
 void OLED_Send(uint8_t *data, uint8_t len)
 {
-  while(HAL_I2C_Master_Transmit_DMA(&hi2c1, OLED_ADDRESS, data, len) != HAL_OK);
+  /* 默认实现使用 DMA，并等待 I2C 回到 READY，避免发送缓冲区被提前复用。 */
 }
 ```
 
@@ -96,5 +96,16 @@ void OLED_Send(uint8_t *data, uint8_t len)
 在初始化中调用   `UI_Init()`
 
 在主循环中调用   `UI_UpDate()` `UI_Move()` `UI_Show()` 
+
+如需绕过默认按键处理，可直接调用：
+
+```c
+Menu_HandleEvent(MENU_EVENT_NEXT);
+Menu_HandleEvent(MENU_EVENT_PREV);
+Menu_HandleEvent(MENU_EVENT_ENTER);
+Menu_HandleEvent(MENU_EVENT_BACK);
+```
+
+更多重构和迁移说明见 `MIGRATION.md`。
 
 具体使用见例程和视频

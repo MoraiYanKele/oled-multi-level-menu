@@ -6,6 +6,7 @@
 
 // OLED器件地址
 #define OLED_ADDRESS 0x78
+#define OLED_I2C_TIMEOUT_MS 100
 
 // OLED参数
 #define OLED_PAGE 8            // OLED页数
@@ -26,7 +27,35 @@ uint8_t OLED_GRAM[OLED_PAGE][OLED_COLUMN];
  */
 void OLED_Send(uint8_t *data, uint8_t len)
 {
-  while(HAL_I2C_Master_Transmit_DMA(&hi2c1, OLED_ADDRESS, data, len) != HAL_OK);
+  uint32_t tickStart = HAL_GetTick();
+
+  while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
+  {
+    if (HAL_GetTick() - tickStart > OLED_I2C_TIMEOUT_MS)
+    {
+      return;
+    }
+  }
+
+  tickStart = HAL_GetTick();
+
+  while (HAL_I2C_Master_Transmit_DMA(&hi2c1, OLED_ADDRESS, data, len) != HAL_OK)
+  {
+    if (HAL_GetTick() - tickStart > OLED_I2C_TIMEOUT_MS)
+    {
+      return;
+    }
+  }
+
+  tickStart = HAL_GetTick();
+
+  while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY)
+  {
+    if (HAL_GetTick() - tickStart > OLED_I2C_TIMEOUT_MS)
+    {
+      return;
+    }
+  }
 }
 
 /**

@@ -31,147 +31,142 @@
 #include "oled_menu.h"
 
 /**
- * @brief 主菜单项。
- * 
- * 定义了主菜单的静态项。
- */
-ItemTypedef mainMenuItems[] = 
-{
-  {"example", 7, NULL, NULL, NULL}, /**< 示例菜单项 */
-
-};
-
-/**
  * @brief 主菜单。
- * 
+ *
  * 包含主菜单的名称、菜单项、父菜单以及菜单项数量。
  */
-Menutypedef mainMenu = {"mainMenu", mainMenuItems, NULL, sizeof(mainMenuItems) / sizeof(ItemTypedef), 0};
-
-Menutypedef *currentMenu = &mainMenu;
-
-/**
- * @brief 按键列表。
- * 
- * 存储所有按键的状态信息。
- */
-KeyTypeDef KeyList[2] = {0};
-
-/**
- * @brief 菜单框的 Y 坐标。
- */
-UIElemTypedef frameY = 
+Menutypedef mainMenu =
 {
-  .val = 0,         /**< 当前值 */
-  .targetVal = 0,   /**< 目标值 */
-  .lastVal = 0      /**< 上一次值 */
+  .menuName = "mainMenu",
+  .items = NULL,
+  .itemPool =
+  {
+    {"example", 7, NULL, NULL, NULL, {NULL, NONE_CTRL}},
+  },
+  .parentMenu = NULL,
+  .itemCount = 1,
+  .currentItemIndex = 0,
+};
+static Menutypedef menuPool[MENU_MAX_MENUS] = {0};
+static uint16_t menuPoolCount = 0;
+
+MenuContextTypedef defaultMenuContext =
+{
+  .state =
+  {
+    .current_menu = &mainMenu,
+    .screen_index = {.topIndex = 0, .bottomIndex = 3},
+    .menu_switch_flag = 0,
+    .control_selection_flag = 0,
+  },
+  .anim =
+  {
+    .frame_y = {.val = 0, .targetVal = 0, .lastVal = 0},
+    .frame_width = {.val = 0, .targetVal = 0, .lastVal = 0},
+    .screen_top = {.val = 0, .targetVal = 0, .lastVal = 0},
+    .scroll_bar_y = {.val = 2, .targetVal = 2, .lastVal = 2},
+    .switch_ctrl_bar = {.val = 64 + 2, .targetVal = 64 + 2, .lastVal = 64 + 2},
+    .display_ctrl_bar = {.val = 0, .targetVal = 0, .lastVal = 0},
+    .move_process_frame_y = 0.0,
+    .move_process_frame_width = 0.0,
+    .move_process_screen = 0.0,
+    .move_process_scroll_bar = 0.0,
+    .move_process_switch_ctrl_bar = 0.0,
+  },
+  .keys = {0},
+  .key_id = 0,
 };
 
-/**
- * @brief 菜单框的宽度。
- */
-UIElemTypedef frameWidth = 
+MenuContextTypedef *activeMenuContext = &defaultMenuContext;
+
+static uint32_t Menu_DefaultGetTick(void)
 {
-  .val = 0,         /**< 当前值 */
-  .targetVal = 0,   /**< 目标值 */
-  .lastVal = 0      /**< 上一次值 */
-};
+  return HAL_GetTick();
+}
 
-/**
- * @brief 屏幕顶部的 Y 坐标。
- */
-UIElemTypedef screenTop = 
+static void Menu_DefaultDelay(uint32_t ms)
 {
-  .val = 0,         /**< 当前值 */
-  .targetVal = 0,   /**< 目标值 */
-  .lastVal = 0      /**< 上一次值 */
-};
+  HAL_Delay(ms);
+}
 
-/**
- * @brief 滚动条的 Y 坐标。
- */
-UIElemTypedef scrollBarY = 
+// ------------函数定义------------//
+static void Menu_EnsureStorage(Menutypedef *menu)
 {
-  .val = 2,         /**< 当前值 */
-  .targetVal = 2,   /**< 目标值 */
-  .lastVal = 2      /**< 上一次值 */
-};
+  if (menu && !menu->items)
+  {
+    menu->items = menu->itemPool;
+  }
+}
 
-/**
- * @brief 开关控件条的 Y 坐标。
- */
-UIElemTypedef switchCtrlBar = 
+static void Menu_RefreshTargets(void)
 {
-  .val = 64 + 2,    /**< 当前值 */
-  .targetVal = 64 + 2, /**< 目标值 */
-  .lastVal = 64 + 2 /**< 上一次值 */
-};
+  Frame_Update();
+  Screen_Update();
+  ScrollBar_Update();
+  switchCtrlBar_Update();
+}
 
-/**
- * @brief 显示控件条的 Y 坐标。
- */
-UIElemTypedef displayCtrlBar = 
+void Menu_InitContext(MenuContextTypedef *ctx, Menutypedef *rootMenu)
 {
-  .val = 0,         /**< 当前值 */
-  .targetVal = 0,   /**< 目标值 */
-  .lastVal = 0      /**< 上一次值 */
-};
+  if (!ctx)
+  {
+    return;
+  }
 
-/**
- * @brief 屏幕索引。
- * 
- * 包含屏幕顶部和底部菜单项的索引。
- */
-ScreenIndexTypedef screenIndex = 
+  memset(ctx, 0, sizeof(MenuContextTypedef));
+  ctx->state.current_menu = rootMenu ? rootMenu : &mainMenu;
+  ctx->state.screen_index.topIndex = 0;
+  ctx->state.screen_index.bottomIndex = 3;
+  ctx->anim.scroll_bar_y.val = 2;
+  ctx->anim.scroll_bar_y.targetVal = 2;
+  ctx->anim.scroll_bar_y.lastVal = 2;
+  ctx->anim.switch_ctrl_bar.val = 64 + 2;
+  ctx->anim.switch_ctrl_bar.targetVal = 64 + 2;
+  ctx->anim.switch_ctrl_bar.lastVal = 64 + 2;
+  ctx->platform.get_tick = Menu_DefaultGetTick;
+  ctx->platform.delay = Menu_DefaultDelay;
+}
+
+void Menu_SetContext(MenuContextTypedef *ctx)
 {
-  .topIndex = 0,    /**< 顶部索引 */
-  .bottomIndex = 3  /**< 底部索引 */
-};
+  activeMenuContext = ctx ? ctx : &defaultMenuContext;
+}
 
-/**
- * @brief 当前按键 ID。
- * 
- * 0 表示没有按键响应，1 表示 KEY1，2 表示 KEY2。
- */
-uint8_t keyID = 0;
+void Menu_SetPlatform(MenuContextTypedef *ctx, MenuPlatformTypedef platform)
+{
+  if (!ctx)
+  {
+    ctx = &defaultMenuContext;
+  }
 
-/**
- * @brief 菜单切换标志。
- * 
- * 0 表示没有切换菜单，1 表示切换菜单。
- */
-uint8_t menuSwitchFlag = 0;
+  ctx->platform.get_tick = platform.get_tick ? platform.get_tick : Menu_DefaultGetTick;
+  ctx->platform.delay = platform.delay ? platform.delay : Menu_DefaultDelay;
+}
 
-/**
- * @brief 控件选择标志。
- * 
- * 0 表示没有选择控件，1 表示选择控件。
- */
-uint8_t controlSelectionFlag = 0;
+static void Menu_EnsurePlatform(MenuContextTypedef *ctx)
+{
+  if (!ctx)
+  {
+    return;
+  }
 
-/**
- * @brief 动画进度变量，用于平滑过渡 UI 组件的移动效果。
- * 
- * 这些变量的值范围通常为 0.0 到 1.0，表示当前动画的进度。
- */
+  if (!ctx->platform.get_tick)
+  {
+    ctx->platform.get_tick = Menu_DefaultGetTick;
+  }
 
-/** @brief 框架 Y 方向的移动进度 */
-float moveProcess_FrameY = 0.0;
+  if (!ctx->platform.delay)
+  {
+    ctx->platform.delay = Menu_DefaultDelay;
+  }
+}
 
-/** @brief 框架宽度变化的移动进度 */
-float moveProcess_FrameWidth = 0.0;
+static void Menu_Delay(uint32_t ms)
+{
+  Menu_EnsurePlatform(activeMenuContext);
+  activeMenuContext->platform.delay(ms);
+}
 
-/** @brief 屏幕滚动的移动进度 */
-float moveProcess_Screen = 0.0;
-
-/** @brief 滚动条的移动进度 */
-float moveProcess_ScrollBar = 0.0;
-
-/** @brief 开关控件滑块的移动进度 */
-float moveProcess_SwitchCtrlBar = 0.0;
-
-
-// ------------函数定义------------// 
 /**
  * @brief 按键中断回调函数。
  * 
@@ -248,7 +243,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 /**
  * @brief 创建并添加一个菜单。
  * 
- * @param name       菜单名称。
+ * @param name       菜单名称，需在菜单生命周期内保持有效。
  * @param items      菜单项数组（可为 NULL）。
  * @param itemCount  菜单项数量（如果 items 为 NULL，传 0）。
  * @param parentMenu 父级菜单（可为 NULL）。
@@ -259,30 +254,31 @@ Menutypedef *AddMenu(const char *name, ItemTypedef *items, uint16_t itemCount, M
   if (!name)
     return NULL;
 
-  // 分配菜单结构体
-  Menutypedef *newMenu = (Menutypedef *)malloc(sizeof(Menutypedef));
-  if (!newMenu)
-    return NULL;
-
-  // 分配菜单名称
-  newMenu->menuName = (char *)malloc(strlen(name) + 1);
-  if (!newMenu->menuName)
+  if (menuPoolCount >= MENU_MAX_MENUS)
   {
-    free(newMenu);
     return NULL;
   }
-  strcpy(newMenu->menuName, name);
 
-  // 初始化菜单项
+  Menutypedef *newMenu = &menuPool[menuPoolCount++];
+  memset(newMenu, 0, sizeof(Menutypedef));
+
+  newMenu->menuName = (char *)name;
+  newMenu->items = newMenu->itemPool;
+  newMenu->itemCount = 0;
+
   if (items && itemCount > 0)
   {
-    newMenu->items = items;          // 指向现有菜单项数组
-    newMenu->itemCount = itemCount; // 设置菜单项数量
-  }
-  else
-  {
-    newMenu->items = NULL;          // 无菜单项时，初始化为空
-    newMenu->itemCount = 0;
+    uint16_t copyCount = itemCount > MENU_MAX_ITEMS ? MENU_MAX_ITEMS : itemCount;
+    memcpy(newMenu->itemPool, items, copyCount * sizeof(ItemTypedef));
+    for (uint16_t i = 0; i < copyCount; i++)
+    {
+      if (newMenu->itemPool[i].control)
+      {
+        newMenu->itemPool[i].controlData = *newMenu->itemPool[i].control;
+        newMenu->itemPool[i].control = &newMenu->itemPool[i].controlData;
+      }
+    }
+    newMenu->itemCount = copyCount;
   }
 
   // 初始化其他属性
@@ -296,8 +292,8 @@ Menutypedef *AddMenu(const char *name, ItemTypedef *items, uint16_t itemCount, M
 /**
  * @brief 向指定菜单添加一个新的菜单项。
  * 
- * 该函数动态创建并初始化菜单项，并将其添加到 `menu->items` 数组中。
- * 如果 `menu->items` 为空，则先分配内存。如果已有菜单项，则使用 `realloc` 进行扩展。
+ * 该函数初始化一个菜单项，并将其写入菜单内置的静态菜单项池中。
+ * 如果菜单项数量达到 MENU_MAX_ITEMS，则添加失败并返回 NULL。
  * 
  * @param menu     指向目标菜单的指针。
  * @param name     菜单项的名称（字符串）。
@@ -308,8 +304,8 @@ Menutypedef *AddMenu(const char *name, ItemTypedef *items, uint16_t itemCount, M
  * @return ItemTypedef* 返回新创建的菜单项指针，若失败则返回 NULL。
  * 
  * @note 
- * - 该函数会为 `name` 和 `control` 结构体分配内存，确保数据的独立性。
- * - 如果 `menu->items` 为空，会先分配空间，否则使用 `realloc` 扩展。
+ * - 该函数不为 `name` 分配内存，调用方需保证字符串在菜单生命周期内有效。
+ * - 控件信息存储在菜单项内置的 `controlData` 中，不使用动态分配。
  * - 确保 `menu->itemCount` 及时更新，以便正确管理菜单项。
  * 
  * @warning 
@@ -326,69 +322,32 @@ ItemTypedef *AddMenuItem(Menutypedef *menu,
   if (!menu || !name)
     return NULL;
 
-  ItemTypedef *newItem = (ItemTypedef *)malloc(sizeof(ItemTypedef));
-  if (!newItem)
-    return NULL;
-  
-  newItem->str = (char *)malloc(strlen(name) + 1);
-  if (!newItem->str)
+  Menu_EnsureStorage(menu);
+
+  if (menu->itemCount >= MENU_MAX_ITEMS)
   {
-    free(newItem);
     return NULL;
   }
-  strcpy(newItem->str, name);
-  newItem->len = strlen(newItem->str);
+
+  ItemTypedef *newItem = &menu->items[menu->itemCount];
+  memset(newItem, 0, sizeof(ItemTypedef));
+
+  newItem->str = (char *)name;
+  newItem->len = strlen(name);
   newItem->subMenu = subMenu;
   newItem->Function = funtion;
-  
+
   if (ctrlMode != 0)
   {
-    newItem->control = (ControlTypedef *)malloc(sizeof(ControlTypedef));
-    if (!newItem->control)
-    {
-      free(newItem->str);
-      free(newItem);
-      return NULL;
-    }
-
+    newItem->control = &newItem->controlData;
     newItem->control->mode = ctrlMode;
     newItem->control->data = ctrlData;
   }
-  else 
+  else
     newItem->control = NONE_CTRL;
-  
-  if (!menu->items)
-  {
 
-    menu->items = (ItemTypedef *)malloc(sizeof(ItemTypedef));
-    if (!menu->items) 
-    {
-      if (newItem->control)
-        free(newItem->control);
-      free(newItem->str);
-      free(newItem);
-      return NULL;
-    }
-    menu->itemCount = 0; 
-  }
-  else 
-  {
-    ItemTypedef *temp = (ItemTypedef *)realloc(menu->items, (menu->itemCount + 1) * sizeof(ItemTypedef));
-    if (!temp)
-    {
-      if (newItem->control)
-        free(newItem->control);
-      free(newItem->str);
-      free(newItem);
-      return NULL;
-    }
-    menu->items = temp;
-  }
-
-  menu->items[menu->itemCount] = *newItem;
   menu->itemCount++;
 
-  free(newItem);
   return &menu->items[menu->itemCount - 1];
 }
 
@@ -404,41 +363,163 @@ ItemTypedef *AddMenuItem(Menutypedef *menu,
  */
 void UI_Init()
 {
+  Menu_EnsurePlatform(activeMenuContext);
   OLED_Init();
   memset(KeyList, 0, sizeof(KeyList));
-  frameWidth.targetVal = currentMenu->items[currentMenu->currentItemIndex].len * 6 + 4;
-  HAL_Delay(20);
+  Menu_EnsureStorage(currentMenu);
+  if (currentMenu && currentMenu->items && currentMenu->itemCount > 0)
+  {
+    frameWidth.targetVal = currentMenu->items[currentMenu->currentItemIndex].len * 6 + 4;
+  }
+  else
+  {
+    frameWidth.targetVal = 0;
+  }
+  Menu_Delay(20);
+}
+
+static void Menu_HandleActiveEvent(MenuEventTypedef event)
+{
+  Menu_EnsureStorage(currentMenu);
+
+  if (event == MENU_EVENT_NONE || !currentMenu || !currentMenu->items || currentMenu->itemCount == 0)
+  {
+    return;
+  }
+
+  ItemTypedef *currentItem = &currentMenu->items[currentMenu->currentItemIndex];
+
+  if (controlSelectionFlag == 0)
+  {
+    switch (event)
+    {
+      case MENU_EVENT_NEXT:
+        currentMenu->currentItemIndex++;
+        if (currentMenu->currentItemIndex >= currentMenu->itemCount)
+        {
+          currentMenu->currentItemIndex = 0;
+        }
+        break;
+
+      case MENU_EVENT_PREV:
+        currentMenu->currentItemIndex--;
+        if (currentMenu->currentItemIndex < 0)
+        {
+          currentMenu->currentItemIndex = currentMenu->itemCount - 1;
+        }
+        break;
+
+      case MENU_EVENT_ENTER:
+        if (currentItem->Function)
+        {
+          currentItem->Function();
+        }
+        break;
+
+      case MENU_EVENT_BACK:
+        if (currentMenu->parentMenu)
+        {
+          currentMenu = currentMenu->parentMenu;
+          Menu_EnsureStorage(currentMenu);
+          menuSwitchFlag = 1;
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+  else
+  {
+    ControlTypedef *control = currentItem->control;
+
+    switch (event)
+    {
+      case MENU_EVENT_NEXT:
+      case MENU_EVENT_PREV:
+        if (!control || !control->data)
+        {
+          break;
+        }
+
+        if (control->mode == SWITCH_CTRL)
+        {
+          *(control->data) = *(control->data) ? 0 : 1;
+        }
+        else if (control->mode == SLIDER_CTRL)
+        {
+          if (event == MENU_EVENT_NEXT)
+          {
+            *(control->data) += 1;
+          }
+          else
+          {
+            *(control->data) -= 1;
+          }
+          *(control->data) = LIMIT_MAGNITUDE(*(control->data), 0, 100);
+        }
+        break;
+
+      case MENU_EVENT_BACK:
+        controlSelectionFlag = 0;
+        menuSwitchFlag = 1;
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  Menu_RefreshTargets();
+}
+
+void Menu_HandleEventFor(MenuContextTypedef *ctx, MenuEventTypedef event)
+{
+  MenuContextTypedef *lastContext = activeMenuContext;
+
+  Menu_SetContext(ctx);
+  Menu_HandleActiveEvent(event);
+  Menu_SetContext(lastContext);
+}
+
+void Menu_HandleEvent(MenuEventTypedef event)
+{
+  Menu_HandleActiveEvent(event);
 }
 
 
 /**
  * @brief 更新 UI 状态。
- * 
- * 根据按键状态标志更新 UI，并触发对应的短按或长按逻辑。
- * 
- * - 如果按键为短按，调用 `KeyShortPress`。
- * - 如果按键为长按，调用 `KeyLongPress`。
- * - 更新框架、屏幕、滚动条和控件条的显示。
+ *
+ * 根据按键状态生成菜单事件，并交给 `Menu_HandleEvent()` 统一处理。
  */
 void UI_UpDate()
 {
-  if (KeyList[keyID - 1].updateFlag)
+  for (uint8_t i = 0; i < 2; i++)
   {
-    KeyList[keyID - 1].updateFlag = 0;
+    MenuEventTypedef event = MENU_EVENT_NONE;
 
-    if (KeyList[keyID - 1].longPress == 2)
+    if (!KeyList[i].updateFlag)
     {
-      KeyShortPress(); /**< 处理短按逻辑 */
-    }
-    else if (KeyList[keyID - 1].longPress == 1)
-    {
-      KeyLongPress(); /**< 处理长按逻辑 */
+      continue;
     }
 
-    Frame_Update();        /**< 更新框架显示 */
-    Screen_Update();       /**< 更新屏幕显示 */
-    ScrollBar_Update();    /**< 更新滚动条显示 */
-    switchCtrlBar_Update();/**< 更新开关控件条显示 */
+    KeyList[i].updateFlag = 0;
+    keyID = i + 1;
+
+    if (KeyList[i].longPress == SHORT_PRESS)
+    {
+      event = (keyID == 1) ? MENU_EVENT_NEXT : MENU_EVENT_PREV;
+    }
+    else if (KeyList[i].longPress == LONG_PRESS)
+    {
+      event = (keyID == 1) ? MENU_EVENT_ENTER : MENU_EVENT_BACK;
+    }
+
+    Menu_HandleEvent(event);
+
+    KeyList[i].longPress = 0;
+    keyID = 0;
   }
 }
 
@@ -449,38 +530,13 @@ void UI_UpDate()
  */
 void KeyLongPress()
 {
-  if (controlSelectionFlag == 0)
+  if (keyID == 1)
   {
-    if (keyID == 1)
-    {
-      // 执行当前菜单项的功能函数
-      if (currentMenu->items[currentMenu->currentItemIndex].Function)
-      {
-        currentMenu->items[currentMenu->currentItemIndex].Function();
-      }
-    }
-    else if (keyID == 2)
-    {
-      // 返回父菜单
-      if (currentMenu->parentMenu)
-      {
-        currentMenu = currentMenu->parentMenu;
-        menuSwitchFlag = 1; // 设置菜单切换标志
-      }
-    }
+    Menu_HandleEvent(MENU_EVENT_ENTER);
   }
-  else if (controlSelectionFlag == 1)
+  else if (keyID == 2)
   {
-    if (keyID == 1)
-    {
-      // 按键 1 暂未实现功能
-    }
-    else if (keyID == 2)
-    {
-      // 退出控件选择状态
-      controlSelectionFlag = 0;
-      menuSwitchFlag = 1; // 设置菜单切换标志
-    }
+    Menu_HandleEvent(MENU_EVENT_BACK);
   }
 }
 
@@ -491,66 +547,13 @@ void KeyLongPress()
  */
 void KeyShortPress()
 {
-  if (controlSelectionFlag == 0)
+  if (keyID == 1)
   {
-    if (keyID == 1)
-    {
-      currentMenu->currentItemIndex++; /**< 移动到下一个菜单项 */
-    }
-    else if (keyID == 2)
-    {
-      currentMenu->currentItemIndex--; /**< 移动到上一个菜单项 */
-    }
-
-    // 循环索引
-    if (currentMenu->currentItemIndex == currentMenu->itemCount)
-    {
-      currentMenu->currentItemIndex = 0; /**< 回到菜单开头 */
-    }
-    else if (currentMenu->currentItemIndex == -1)
-    {
-      currentMenu->currentItemIndex = currentMenu->itemCount - 1; /**< 回到菜单结尾 */
-    }
+    Menu_HandleEvent(MENU_EVENT_NEXT);
   }
-  else if (controlSelectionFlag == 1)
+  else if (keyID == 2)
   {
-    // 控件操作逻辑
-    switch (currentMenu->items[currentMenu->currentItemIndex].control->mode)
-    {
-    case SWITCH_CTRL:
-      // 切换开关状态
-      if (keyID == 1 || keyID == 2)
-      {
-        if (*(currentMenu->items[currentMenu->currentItemIndex].control->data) == 0)
-        {
-          *(currentMenu->items[currentMenu->currentItemIndex].control->data) = 1; /**< 设置为开启 */
-        }
-        else
-        {
-          *(currentMenu->items[currentMenu->currentItemIndex].control->data) = 0; /**< 设置为关闭 */
-        }
-      }
-      break;
-    
-    case DISPLAY_CTRL:
-      // 显示控件，暂不处理
-      break;
-    
-    case SLIDER_CTRL:
-      // 调整滑动条值
-      if (keyID == 1)
-      {
-        *(currentMenu->items[currentMenu->currentItemIndex].control->data) += 1; /**< 增加值 */
-      }
-      else if (keyID == 2)
-      {
-        *(currentMenu->items[currentMenu->currentItemIndex].control->data) -= 1; /**< 减小值 */
-      }
-      break;
-    
-    default:
-      break;
-    }
+    Menu_HandleEvent(MENU_EVENT_PREV);
   }
 }
 
@@ -561,11 +564,20 @@ void KeyShortPress()
  */
 void Frame_Update()
 {
+  Menu_EnsureStorage(currentMenu);
+
   moveProcess_FrameY = 0.0;
   moveProcess_FrameWidth = 0.0;
 
   frameY.lastVal = frameY.targetVal;
   frameWidth.lastVal = frameWidth.targetVal;
+
+  if (!currentMenu || !currentMenu->items || currentMenu->itemCount == 0)
+  {
+    frameY.targetVal = 0;
+    frameWidth.targetVal = 0;
+    return;
+  }
 
   frameY.targetVal = currentMenu->currentItemIndex * MENU_ITEM_HEIGHT; /**< 更新 Y 目标值 */
   frameWidth.targetVal = currentMenu->items[currentMenu->currentItemIndex].len * 6 + 4; /**< 更新宽度目标值 */
@@ -578,6 +590,17 @@ void Frame_Update()
  */
 void Screen_Update()
 {
+  Menu_EnsureStorage(currentMenu);
+
+  if (!currentMenu || currentMenu->itemCount == 0)
+  {
+    screenIndex.topIndex = 0;
+    screenIndex.bottomIndex = 0;
+    screenTop.lastVal = screenTop.targetVal;
+    screenTop.targetVal = 0;
+    return;
+  }
+
   if (currentMenu->currentItemIndex > screenIndex.bottomIndex)
   {
     moveProcess_Screen = 0.0;
@@ -605,22 +628,34 @@ void ScrollBar_Update(void)
   moveProcess_ScrollBar = 0.0;
   scrollBarY.lastVal = scrollBarY.val;
 
-  float moveRangef = (float)((OLED_SCREEN_HEIGHT - 4) - (OLED_SCREEN_HEIGHT * 2) / currentMenu->itemCount) / (currentMenu->itemCount - 1);
-  int moveRange = (int)(moveRangef + 0.5f);
-  if (currentMenu->itemCount == 2 || currentMenu->itemCount == 1)
+  if (!currentMenu)
+  {
+    scrollBarY.targetVal = 2;
+    return;
+  }
+
+  if (currentMenu->itemCount <= 1)
+  {
+    scrollBarY.targetVal = 2;
+    return;
+  }
+
+  if (currentMenu->itemCount == 2)
   {
     scrollBarY.targetVal = (currentMenu->currentItemIndex * 10) + 2;
+    return;
+  }
+
+  float moveRangef = (float)((OLED_SCREEN_HEIGHT - 4) - (OLED_SCREEN_HEIGHT * 2) / currentMenu->itemCount) / (currentMenu->itemCount - 1);
+  int moveRange = (int)(moveRangef + 0.5f);
+
+  if (currentMenu->currentItemIndex == currentMenu->itemCount - 1)
+  {
+    scrollBarY.targetVal = OLED_SCREEN_HEIGHT - 2 - (OLED_SCREEN_HEIGHT * 2) / currentMenu->itemCount;
   }
   else
   {
-    if (currentMenu->currentItemIndex == currentMenu->itemCount - 1)
-    {
-      scrollBarY.targetVal = OLED_SCREEN_HEIGHT - 2 - (OLED_SCREEN_HEIGHT * 2) / currentMenu->itemCount;
-    }
-    else
-    {
-      scrollBarY.targetVal = (currentMenu->currentItemIndex * moveRange) + 2;
-    }
+    scrollBarY.targetVal = (currentMenu->currentItemIndex * moveRange) + 2;
   }
 }
 
@@ -631,10 +666,23 @@ void ScrollBar_Update(void)
  */
 void switchCtrlBar_Update(void)
 {
+  Menu_EnsureStorage(currentMenu);
+
+  if (!currentMenu || !currentMenu->items || currentMenu->itemCount == 0)
+  {
+    return;
+  }
+
+  ControlTypedef *control = currentMenu->items[currentMenu->currentItemIndex].control;
+  if (!control || control->mode != SWITCH_CTRL || !control->data)
+  {
+    return;
+  }
+
   moveProcess_SwitchCtrlBar = 0.0;
   switchCtrlBar.lastVal = switchCtrlBar.val;
 
-  if (*(currentMenu->items[currentMenu->currentItemIndex].control->data) == 0)
+  if (*(control->data) == 0)
   {
     switchCtrlBar.targetVal = 64 + 2; /**< 开关关闭位置 */
   }
@@ -758,7 +806,7 @@ void InterfaceSwitch()
   {
     OLED_Disappear();
     OLED_ShowFrame();
-    HAL_Delay(50); /**< 在 FreeRTOS 中使用非阻塞式延时 */
+    Menu_Delay(50); /**< 在 FreeRTOS 中可通过 Menu_SetPlatform 替换延时 */
   }
 }
 
@@ -772,9 +820,11 @@ void InterfaceSwitch()
  */
 void DrawMenuItems()
 {
+  Menu_EnsureStorage(currentMenu);
+
   int16_t showItemEndNum = 0;
   int16_t showItemStartNum = 0;
-  if (currentMenu->itemCount > 0) 
+  if (currentMenu && currentMenu->itemCount > 0)
   {
     showItemEndNum = (currentMenu->itemCount > 4) ? ((currentMenu->currentItemIndex) < currentMenu->itemCount - 4 ? 5 : 4) : currentMenu->itemCount;
     showItemStartNum = (currentMenu->currentItemIndex > 3) ? -1 : 0;
@@ -814,25 +864,41 @@ void DrawMenuItems()
  */
 void DrawControlSelection()
 {
+  Menu_EnsureStorage(currentMenu);
+
+  if (!currentMenu || !currentMenu->items || currentMenu->itemCount == 0)
+  {
+    controlSelectionFlag = 0;
+    return;
+  }
+
+  ControlTypedef *control = currentMenu->items[currentMenu->currentItemIndex].control;
+  if (!control)
+  {
+    controlSelectionFlag = 0;
+    return;
+  }
+
+  OLED_NewFrame();
   OLED_DrawEmptyRectangle(16, 8, 96, 48);
 
   DrawItemName(currentMenu->items[currentMenu->currentItemIndex].str, 16 + 2, 8 + 2);
 
-  switch (currentMenu->items[currentMenu->currentItemIndex].control->mode)
+  switch (control->mode)
   {
     case SWITCH_CTRL:
     {
-      DrawSwitchControl(currentMenu->items[currentMenu->currentItemIndex].control);
+      DrawSwitchControl(control);
       break;
     }
     case DISPLAY_CTRL:
     {
-      DrawDisplayControl(currentMenu->items[currentMenu->currentItemIndex].control);
+      DrawDisplayControl(control);
       break;
     }
     case SLIDER_CTRL:
     {
-      DrawSliderControl(currentMenu->items[currentMenu->currentItemIndex].control);
+      DrawSliderControl(control);
       break;
     }
     default:
@@ -866,7 +932,7 @@ void DrawItemName(char *str, int xPos, int yPos)
  */
 void DrawControlInformation(ControlTypedef *control, int yPos)
 {
-  if (control)
+  if (control && control->data)
   {
     switch (control->mode)
     {
@@ -907,6 +973,11 @@ void DrawControlInformation(ControlTypedef *control, int yPos)
  */
 void DrawSelectionFrame()
 {
+  if (!currentMenu || currentMenu->itemCount == 0)
+  {
+    return;
+  }
+
   OLED_DrawFilledRectangleWithCorners(0, frameY.val + 1 - (screenIndex.topIndex * MENU_ITEM_HEIGHT), frameWidth.val, MENU_ITEM_HEIGHT - 2, OLED_COLOR_REVERSED);
 }
 
@@ -918,6 +989,11 @@ void DrawSelectionFrame()
 void DrawScrollBar()
 {
   OLED_DrawRectangle(OLED_SCREEN_WIDTH - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN - 2, 0, 6, OLED_SCREEN_HEIGHT - 1, OLED_COLOR_NORMAL);
+  if (!currentMenu || currentMenu->itemCount == 0)
+  {
+    return;
+  }
+
   if (currentMenu->itemCount == 2 || currentMenu->itemCount == 1)
   {
     OLED_DrawFilledRectangle(OLED_SCREEN_WIDTH - SCROLLBAR_WIDTH - SCROLLBAR_MARGIN, scrollBarY.val, SCROLLBAR_WIDTH, currentMenu->itemCount == 1 ? 60 : 50, OLED_COLOR_NORMAL);
@@ -937,6 +1013,11 @@ void DrawScrollBar()
  */
 void DrawSwitchControl(ControlTypedef *control)
 {
+  if (!control || !control->data)
+  {
+    return;
+  }
+
   OLED_DrawRectangleWithCorners(64 - 30, 28, 60, 20, OLED_COLOR_NORMAL);
   OLED_PrintASCIIString(64 - 20, 28 + 5, "ON", &afont12x6, OLED_COLOR_NORMAL);
   OLED_PrintASCIIString(64 + 7, 28 + 5, "OFF", &afont12x6, OLED_COLOR_NORMAL);
@@ -952,6 +1033,11 @@ void DrawSwitchControl(ControlTypedef *control)
  */
 void DrawDisplayControl(ControlTypedef *control)
 {
+  if (!control || !control->data)
+  {
+    return;
+  }
+
   OLED_DrawRectangle(64 - 40, 40, 80, 10, OLED_COLOR_NORMAL);
   char str[10];
   sprintf(str, "%d", *(control->data));
@@ -972,6 +1058,11 @@ void DrawDisplayControl(ControlTypedef *control)
  */
 void DrawSliderControl(ControlTypedef *control)
 {
+  if (!control || !control->data)
+  {
+    return;
+  }
+
   OLED_DrawRectangle(64 - 40, 40, 80, 10, OLED_COLOR_NORMAL);
   char str[10];
   sprintf(str, "%d", *(control->data));
@@ -1010,6 +1101,19 @@ float easeInOut(float t)
  */
 void FunctionForCtrl(void)
 {
+  Menu_EnsureStorage(currentMenu);
+
+  if (!currentMenu || !currentMenu->items || currentMenu->itemCount == 0)
+  {
+    return;
+  }
+
+  ControlTypedef *control = currentMenu->items[currentMenu->currentItemIndex].control;
+  if (!control || !control->data)
+  {
+    return;
+  }
+
   controlSelectionFlag = 1;
   menuSwitchFlag = 1;
 }
@@ -1026,6 +1130,13 @@ void FunctionForCtrl(void)
  */
 void FunctionForNextMenu(void)
 {
+  Menu_EnsureStorage(currentMenu);
+
+  if (!currentMenu || !currentMenu->items || currentMenu->itemCount == 0)
+  {
+    return;
+  }
+
   if (currentMenu->items[currentMenu->currentItemIndex].subMenu)
   {
     currentMenu = currentMenu->items[currentMenu->currentItemIndex].subMenu;

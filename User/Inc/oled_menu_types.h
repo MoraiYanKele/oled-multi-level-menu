@@ -3,10 +3,12 @@
 
 #include <stdint.h>
 
-struct Menutypedef ;
-struct ItemTypedef ;
+struct Menutypedef;
+struct ItemTypedef;
 struct ControlTypedef;
 
+#define MENU_MAX_ITEMS 16
+#define MENU_MAX_MENUS 8
 
 /**
  * @brief 控件模式类型枚举。
@@ -34,23 +36,33 @@ typedef enum
 } PressModeTypedef;
 
 /**
- * @brief 菜单结构体。
- * 
- * 定义了一个菜单的属性，包括名称、菜单项、父菜单、子菜单等。
+ * @brief 菜单事件类型枚举。
+ *
+ * 此枚举将底层按键输入转换为菜单可以理解的抽象事件。
  */
-typedef struct Menutypedef
+typedef enum
 {
-  char *menuName;                 /**< 菜单名称 */
-  struct ItemTypedef *items;      /**< 菜单项指针 */
-  struct Menutypedef *parentMenu; /**< 父级菜单指针 */
-  uint16_t itemCount;             /**< 菜单项数量 */
-  int currentItemIndex;           /**< 当前菜单项索引 */
+  MENU_EVENT_NONE  = 0,     /**< 无事件 */
+  MENU_EVENT_NEXT  = 1,     /**< 下一项或增加值 */
+  MENU_EVENT_PREV  = 2,     /**< 上一项或减少值 */
+  MENU_EVENT_ENTER = 3,     /**< 进入/执行 */
+  MENU_EVENT_BACK  = 4      /**< 返回/退出 */
+} MenuEventTypedef;
+/**
+ * @brief 控件结构体。
+ *
+ * 定义了控件的属性，包括绑定的数据指针和控件模式。
+ */
+typedef struct ControlTypedef
+{
+  int *data;                      /**< 控件绑定的数据指针 */
+  ControlModeTypedef mode;        /**< 控件模式 */
 
-} Menutypedef;
+} ControlTypedef;
 
 /**
  * @brief 菜单项结构体。
- * 
+ *
  * 定义了菜单项的属性，包括名称、子菜单、控件信息等。
  */
 typedef struct ItemTypedef
@@ -60,20 +72,25 @@ typedef struct ItemTypedef
   void (*Function)(void);         /**< 菜单项执行的函数指针 */
   struct Menutypedef *subMenu;    /**< 子级菜单指针 */
   struct ControlTypedef *control; /**< 控件信息指针 */
+  ControlTypedef controlData;     /**< 静态控件存储 */
 
 } ItemTypedef;
 
 /**
- * @brief 控件结构体。
- * 
- * 定义了控件的属性，包括绑定的数据指针和控件模式。
+ * @brief 菜单结构体。
+ *
+ * 定义了一个菜单的属性，包括名称、菜单项、父菜单、子菜单等。
  */
-typedef struct ControlTypedef
+typedef struct Menutypedef
 {
-  int *data;                      /**< 控件绑定的数据指针 */
-  ControlModeTypedef mode;        /**< 控件模式 */
+  char *menuName;                 /**< 菜单名称 */
+  ItemTypedef *items;             /**< 菜单项指针 */
+  ItemTypedef itemPool[MENU_MAX_ITEMS]; /**< 静态菜单项存储池 */
+  struct Menutypedef *parentMenu; /**< 父级菜单指针 */
+  uint16_t itemCount;             /**< 菜单项数量 */
+  int currentItemIndex;           /**< 当前菜单项索引 */
 
-} ControlTypedef;
+} Menutypedef;
 
 /**
  * @brief UI 元素结构体。
@@ -115,6 +132,44 @@ typedef struct
   int16_t bottomIndex;            /**< 屏幕底部索引 */
 
 } ScreenIndexTypedef;
+
+typedef struct
+{
+  Menutypedef *current_menu;
+  ScreenIndexTypedef screen_index;
+  uint8_t menu_switch_flag;
+  uint8_t control_selection_flag;
+} MenuStateTypedef;
+
+typedef struct
+{
+  UIElemTypedef frame_y;
+  UIElemTypedef frame_width;
+  UIElemTypedef screen_top;
+  UIElemTypedef scroll_bar_y;
+  UIElemTypedef switch_ctrl_bar;
+  UIElemTypedef display_ctrl_bar;
+  float move_process_frame_y;
+  float move_process_frame_width;
+  float move_process_screen;
+  float move_process_scroll_bar;
+  float move_process_switch_ctrl_bar;
+} MenuAnimStateTypedef;
+
+typedef struct
+{
+  uint32_t (*get_tick)(void);
+  void (*delay)(uint32_t ms);
+} MenuPlatformTypedef;
+
+typedef struct
+{
+  MenuStateTypedef state;
+  MenuAnimStateTypedef anim;
+  MenuPlatformTypedef platform;
+  KeyTypeDef keys[2];
+  uint8_t key_id;
+} MenuContextTypedef;
 
 
 
